@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>門診片語</title>
+<style>
+:root{--bg:#f6f7f8;--card:#fff;--ink:#1f2933;--muted:#6b7680;--line:#dde2e6;--accent:#0a8f8a;--accent-ink:#fff;--mine:#fff7e6;--ok:#1e8e3e;--danger:#c0392b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15191c;--card:#1f2529;--ink:#e6eaed;--muted:#9aa5ad;--line:#333b41;--accent:#2bb5ae;--accent-ink:#06201f;--mine:#2b2618;--ok:#5cc47a;--danger:#e57368}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI","Noto Sans TC","Microsoft JhengHei",sans-serif}
+main{max-width:860px;margin:0 auto;padding:16px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;margin-bottom:12px}
+h1{font-size:1.4rem;margin:0}
+.hint{color:var(--muted);font-size:.9rem;margin:0}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:4px 12px;font-size:.9rem;cursor:pointer}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+input[type=search],input[type=text],textarea,select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+input[type=search]{flex:1;min-width:180px}
+label.toggle{display:flex;gap:6px;align-items:center;font-size:.9rem;color:var(--muted)}
+ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+li{display:flex;gap:8px;align-items:stretch}
+.phrase{flex:1;text-align:left;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:10px 12px;cursor:pointer;font:inherit}
+.phrase.mine{background:var(--mine)}
+.phrase:hover{border-color:var(--accent)}
+.phrase.copied{border-color:var(--ok);color:var(--ok)}
+.tags{display:block;margin-top:4px;font-size:.78rem;color:var(--muted)}
+.act{display:flex;flex-direction:column;gap:4px}
+.act button,.btn{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:4px 10px;cursor:pointer}
+.act button.del{color:var(--danger)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+section.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:20px}
+section.panel h2{font-size:1rem;margin:0 0 8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+textarea{width:100%;min-height:70px;resize:vertical}
+.empty{color:var(--muted);padding:12px 0}
+footer{color:var(--muted);font-size:.8rem;margin:24px 0 8px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>門診片語</h1>
+    <p class="hint">點一下片語就複製到剪貼簿，可直接貼進病歷。</p>
+  </header>
+
+  <div class="bar">
+    <input type="search" id="q" placeholder="搜尋片語…" aria-label="搜尋片語">
+    <label class="toggle"><input type="checkbox" id="withDate"> 開頭加民國日期（如 115/10/12）</label>
+  </div>
+  <div class="bar" id="chips"></div>
+  <ul id="list"></ul>
+
+  <section class="panel">
+    <h2 id="formTitle">新增我的片語</h2>
+    <textarea id="text" placeholder="輸入片語，可用 ___ 當作待填空格"></textarea>
+    <div class="row">
+      <input type="text" id="cat" list="catList" placeholder="分類（可留空，或打新分類名稱）">
+      <datalist id="catList"></datalist>
+      <button class="btn primary" id="save">儲存</button>
+      <button class="btn" id="cancel" hidden>取消編輯</button>
+    </div>
+    <p class="hint" style="margin-top:8px">預設片語不能修改。你新增的片語只存在這台裝置的這個瀏覽器（localStorage），不會上傳到任何伺服器；換瀏覽器、清除網站資料或用無痕視窗就看不到。</p>
+  </section>
+
+  <section class="panel">
+    <h2>備份與分享</h2>
+    <p class="hint">把自己的片語匯出成檔案，可備份，或傳給朋友匯入。</p>
+    <div class="row">
+      <button class="btn" id="export">匯出我的片語</button>
+      <label class="btn">匯入片語檔<input type="file" id="import" accept="application/json,.json" hidden></label>
+    </div>
+  </section>
+
+  <footer>預設片語取自聖星診所 iManager 門診小幫手。內容僅供病歷書寫參考，請依實際病情修改。</footer>
+</main>
+
+<script>
+const KEY = 'clinicPhrases.v1';
+const PREF = 'clinicPhrases.prefs.v1';
+let defaults = { categories: [], phrases: [] };
+let mine = { phrases: [] };           // {id, text, cat}
+let prefs = { withDate: true, cat: '全部' };
+let editing = null;
+
+const $ = s => document.querySelector(s);
+const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function load() {
+  try { mine = JSON.parse(localStorage.getItem(KEY)) || mine; } catch (e) {}
+  try { prefs = Object.assign(prefs, JSON.parse(localStorage.getItem(PREF)) || {}); } catch (e) {}
+  if (!Array.isArray(mine.phrases)) mine.phrases = [];
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(mine)); } catch (e) { alertOnce('這個瀏覽器不允許儲存，片語只會保留到關閉頁面。'); } }
+function savePrefs() { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch (e) {} }
+let warned = false;
+function alertOnce(m) { if (!warned) { warned = true; $('#formTitle').insertAdjacentHTML('afterend', `<p class="hint" style="color:var(--danger)">${esc(m)}</p>`); } }
+
+function rocDate() {
+  const d = new Date();
+  return `${d.getFullYear() - 1911}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function allItems() {
+  const a = defaults.phrases.map((p, i) => ({ id: 'd' + i, text: p.text, cats: p.cats, mine: false }));
+  const b = mine.phrases.map(p => ({ id: p.id, text: p.text, cats: p.cat ? [p.cat] : [], mine: true }));
+  return b.concat(a);
+}
+function allCats() {
+  const s = new Set(defaults.categories);
+  mine.phrases.forEach(p => p.cat && s.add(p.cat));
+  return [...s];
+}
+
+function renderChips() {
+  const names = ['全部', '我的', ...allCats()];
+  if (!names.includes(prefs.cat)) prefs.cat = '全部';
+  $('#chips').innerHTML = names.map(n => `<button class="chip${n === prefs.cat ? ' on' : ''}" data-c="${esc(n)}">${esc(n)}</button>`).join('');
+  $('#catList').innerHTML = allCats().map(n => `<option value="${esc(n)}">`).join('');
+}
+
+function render() {
+  renderChips();
+  const q = $('#q').value.trim().toLowerCase();
+  const items = allItems().filter(p =>
+    (prefs.cat === '全部' || (prefs.cat === '我的' ? p.mine : p.cats.includes(prefs.cat))) &&
+    (!q || p.text.toLowerCase().includes(q)));
+  $('#list').innerHTML = items.length ? items.map(p => `
+    <li>
+      <button class="phrase${p.mine ? ' mine' : ''}" data-id="${p.id}">${esc(p.text)}
+        <span class="tags">${p.mine ? '我的' : '預設'}${p.cats.length ? '・' + p.cats.map(esc).join('、') : ''}</span>
+      </button>
+      ${p.mine ? `<span class="act"><button data-edit="${p.id}">編輯</button><button class="del" data-del="${p.id}">刪除</button></span>` : ''}
+    </li>`).join('') : '<li class="empty">沒有符合的片語。</li>';
+}
+
+async function copy(btn) {
+  const p = allItems().find(x => x.id === btn.dataset.id);
+  if (!p) return;
+  const text = prefs.withDate ? `${rocDate()} ${p.text}` : p.text;
+  try { await navigator.clipboard.writeText(text); }
+  catch (e) {
+    const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); ta.remove();
+  }
+  btn.classList.add('copied');
+  const tag = btn.querySelector('.tags'); const old = tag.textContent;
+  tag.textContent = '已複製 ✓';
+  setTimeout(() => { btn.classList.remove('copied'); tag.textContent = old; }, 1200);
+}
+
+function resetForm() { editing = null; $('#text').value = ''; $('#cat').value = ''; $('#formTitle').textContent = '新增我的片語'; $('#cancel').hidden = true; }
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.c) { prefs.cat = t.dataset.c; savePrefs(); render(); }
+  else if (t.classList.contains('phrase')) copy(t);
+  else if (t.dataset.edit) {
+    const p = mine.phrases.find(x => x.id === t.dataset.edit); if (!p) return;
+    editing = p.id; $('#text').value = p.text; $('#cat').value = p.cat || '';
+    $('#formTitle').textContent = '編輯我的片語'; $('#cancel').hidden = false; $('#text').focus();
+  } else if (t.dataset.del) {
+    mine.phrases = mine.phrases.filter(x => x.id !== t.dataset.del); save();
+    if (editing === t.dataset.del) resetForm(); render();
+  }
+});
+$('#save').onclick = () => {
+  const text = $('#text').value.trim(); if (!text) return;
+  const cat = $('#cat').value.trim();
+  if (editing) Object.assign(mine.phrases.find(x => x.id === editing) || {}, { text, cat });
+  else mine.phrases.unshift({ id: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text, cat });
+  save(); resetForm(); render();
+};
+$('#cancel').onclick = resetForm;
+$('#q').oninput = render;
+$('#withDate').onchange = e => { prefs.withDate = e.target.checked; savePrefs(); };
+
+$('#export').onclick = () => {
+  const blob = new Blob([JSON.stringify({ format: 'clinic-phrases', version: 1, phrases: mine.phrases.map(({ text, cat }) => ({ text, cat })) }, null, 1)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `門診片語-${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(a.href);
+};
+$('#import').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    const list = Array.isArray(data) ? data : data.phrases;
+    const have = new Set(mine.phrases.map(p => p.text));
+    let n = 0;
+    (list || []).forEach(p => {
+      const text = String(p.text || '').trim().slice(0, 1000); if (!text || have.has(text)) return;
+      mine.phrases.push({ id: 'm' + Date.now().toString(36) + (n++), text, cat: String(p.cat || '').trim().slice(0, 50) });
+      have.add(text);
+    });
+    save(); render(); alert(`匯入 ${n} 句（重複的已略過）。`);
+  } catch (err) { alert('檔案格式不對，無法匯入。'); }
+  e.target.value = '';
+};
+
+load();
+$('#withDate').checked = prefs.withDate;
+fetch('defaults.json').then(r => r.json()).then(d => { defaults = d; render(); }).catch(() => render());
+</script>
+</body>
+</html>

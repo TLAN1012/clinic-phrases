@@ -1,0 +1,109 @@
+{
+ "categories": [
+  "Ditto",
+  "一般症狀",
+  "看報告",
+  "失智家庭諮詢"
+ ],
+ "phrases": [
+  {
+   "text": "No adverse effects or complications reported. Continue current medications.",
+   "cats": [
+    "Ditto"
+   ]
+  },
+  {
+   "text": "Chronic disease on long-term medication; biochemistry labs to be rechecked in 3 months.",
+   "cats": [
+    "Ditto"
+   ]
+  },
+  {
+   "text": "No seizure episodes since the last visit; prescription unchanged.",
+   "cats": [
+    "Ditto",
+    "一般症狀"
+   ]
+  },
+  {
+   "text": "Sleeps well as long as the current hypnotic prescription is taken.",
+   "cats": [
+    "Ditto",
+    "一般症狀"
+   ]
+  },
+  {
+   "text": "EEG: no epileptiform discharges; generalized slow waves present.",
+   "cats": [
+    "看報告"
+   ]
+  },
+  {
+   "text": "X-ray: no abnormal findings.",
+   "cats": [
+    "看報告"
+   ]
+  },
+  {
+   "text": "Resume physical rehabilitation as previously prescribed.",
+   "cats": [
+    "Ditto"
+   ]
+  },
+  {
+   "text": "希望由本院開立原本在醫院領的長期用藥",
+   "cats": [
+    "Ditto",
+    "一般症狀"
+   ]
+  },
+  {
+   "text": "Symptoms of ___ have recurred after an interruption of _ years.",
+   "cats": []
+  },
+  {
+   "text": "Requests continuation of rehabilitation and physical therapy.",
+   "cats": [
+    "Ditto"
+   ]
+  },
+  {
+   "text": "Carotid duplex to be followed up for high-risk screening; IMT mildly thickened, flow normal.",
+   "cats": []
+  },
+  {
+   "text": "Memory decline appears to have stabilized; patient feels comfortable.",
+   "cats": [
+    "Ditto"
+   ]
+  },
+  {
+   "text": "Insufficient exercise; more physical activity advised.",
+   "cats": []
+  },
+  {
+   "text": "Acute symptoms have improved; requests a short-term refill.",
+   "cats": [
+    "Ditto"
+   ]
+  },
+  {
+   "text": "Biochemistry laboratory results reviewed; refill for another 2 months.",
+   "cats": [
+    "Ditto"
+   ]
+  },
+  {
+   "text": "失智身障諮詢: The patient attends the clinic for dementia-related consultation, mainly to ask about long-term care subsidies and how to apply for disability certification.",
+   "cats": [
+    "失智家庭諮詢"
+   ]
+  },
+  {
+   "text": "The patient's family member asks about management and treatment options for sundowning syndrome, reporting that the behavioral and psychological symptoms of dementia (BPSD) appear only in the late afternoon and evening.",
+   "cats": [
+    "失智家庭諮詢"
+   ]
+  }
+ ]
+}
