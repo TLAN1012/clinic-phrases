@@ -47,7 +47,7 @@ footer{color:var(--muted);font-size:.8rem;margin:24px 0 8px}
 
   <div class="bar">
     <input type="search" id="q" placeholder="搜尋片語…" aria-label="搜尋片語">
-    <label class="toggle"><input type="checkbox" id="withDate"> 開頭加民國日期（如 115/10/12）</label>
+    <label class="toggle"><input type="checkbox" id="withDate"> 開頭加民國日期（如 <span id="today"></span>）</label>
   </div>
   <div class="bar" id="chips"></div>
   <ul id="list"></ul>
@@ -200,6 +200,7 @@ $('#import').onchange = async e => {
 
 load();
 $('#withDate').checked = prefs.withDate;
+$('#today').textContent = rocDate();
 fetch('defaults.json').then(r => r.json()).then(d => { defaults = d; render(); }).catch(() => render());
 </script>
 </body>
